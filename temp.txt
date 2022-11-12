@@ -1,0 +1,1 @@
+{"Bus_down":2,"Bus_up":1,"car_down":24,"car_up":15,"id":"KM13MBZ","time":"12:10:2022 8:41:0","total_kr_down":17,"total_kr_up":16,"truck_down":0,"truck_up":0}
