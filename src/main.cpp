@@ -21,6 +21,8 @@
 #include <typeinfo>
 #include <fstream>
 #define CST (+7)
+#define timeday (+1)
+#include <iomanip>
 
 using json = nlohmann::json;
 using namespace cv;
@@ -68,21 +70,44 @@ std::string getTimeStr()
     int ptime_year;
   
     ptime = gmtime(&current_time); 
-    ptime_year = 1900+(ptime->tm_year); 	    
-    std::string lbl_hour = cv::format("%d",(ptime->tm_hour + CST)); 
-    std::string lbl_min = cv::format("%d",(ptime->tm_min));
-    std::string lbl_sec = cv::format("%d",(ptime->tm_sec));
-    
-    std::string lbl_mday = cv::format("%d",(ptime->tm_mday));
-    std::string lbl_mon = cv::format("%d",(ptime->tm_mon));
+    ptime_year = 1900+(ptime->tm_year);
+
+    std::string lbl_hour = cv::format("%2d",(ptime->tm_hour + CST)%24); 
+    std::string lbl_min = cv::format("%2d",(ptime->tm_min));
+    std::string lbl_sec = cv::format("%2d",(ptime->tm_sec));
+   // cout << ptime->tm_hour << endl;
+   
+   
+    std::string lbl_mday = cv::format("%2d",(ptime->tm_mday));
+    std::string lbl_mon = cv::format("%2d",(ptime->tm_mon));
     std::string lbl_year = cv::format("%d",ptime_year);
+ 
     
-    std::string time_wib= lbl_mday+":"+lbl_mon+":"+lbl_year+" "+lbl_hour+":"+lbl_min+":"+lbl_sec;;
+    std::string time_wib= lbl_hour+":"+lbl_min+":"+lbl_sec;
     //+"-"+lbl_hour+":"+lbl_min+":"+lbl_sec;
-    cout << time_wib << endl;
+    
     
    return time_wib;
 }
+
+string configtxt()
+{
+
+    string line;
+    string id_loc;
+    ifstream filein("./config_ai.txt");
+    if (filein.is_open())
+    {
+      getline(filein,line);     
+      filein.close();
+    }
+    else
+    {
+        cout<<"file not open"<<endl;
+    }     
+    return line;
+}
+
 
 void subtract(int *x, int *y, int *result, int size)
 {
@@ -91,8 +116,16 @@ void subtract(int *x, int *y, int *result, int size)
 }
 // thread function for video read
 void readFrame(void)
-{
-    string streamUrl = "rtsp://admin:hik12345@103.3.77.163:5030/Streaming/Channels/102";
+{    
+    string line;
+    string streamUrl;
+    
+    line=configtxt();
+    json stream1=json::parse(line);
+    streamUrl = stream1.value("streamUrl", "oops");
+    
+    cout<<stream1<<endl;
+    //string streamUrl = "rtsp://admin:hik12345@103.3.77.163:5030/Streaming/Channels/102";
     // string streamUrl = "rtsp:://103.3.77.163:4200/axis-cgi/mjpg/video.cgi?date=1&clock=1&resolution=640x480";
      VideoCapture capture(streamUrl);
     // capture.set(cv::CAP_PROP_FPS,15.0);
@@ -130,17 +163,23 @@ void writeFrame(void)
 }
 
 
+
 void resetminutes(int up_list_message[], int down_list_message[], float up_speed_message, float down_speed_message)
 {
     // create an empty structure (null)
     json j;
+    string line;
+    string id_loc;
+    
+    line=configtxt();
+    json stream1=json::parse(line);
+    id_loc = stream1.value("id_loc", "oops");
+    
+    cout<<stream1<<endl;
     
     //jumlah kendaraan up
-    //cout<<typeid(up_list_message[5]).name()<<endl;
     total_bus_up = up_list_message[1]+up_list_message[0];
     total_truck_up= up_list_message[6]+up_list_message[5]+up_list_message[4]+up_list_message[3];
-    //cout<<total_bus_up<<endl;
-    //cout<<total_truck_up<<endl;
     total_kr_up= up_list_message[2]+ total_bus_up + total_truck_up;
     //jumlah kendaraan down
     total_bus_down = down_list_message[1]+down_list_message[0];
@@ -148,30 +187,15 @@ void resetminutes(int up_list_message[], int down_list_message[], float up_speed
     total_kr_down = up_list_message[2]+ total_bus_down + total_truck_down;
     
     //json
-    j["id"] = "KM13MBZ";
+    j["id"] = id_loc;
     j["total_kr_up"]= total_kr_up;
     j["total_kr_down"]= total_kr_down;
     j["time"] = getTimeStr();
     j["car_up"] = up_list_message[2];
     j["Bus_up"] = total_bus_up;
     j["truck_up"] = total_truck_up;
-    //j["bus(s)_up"] = up_list_message[1];
-    //j["bus(l)_up"] = up_list_message[0];
-    //j["truck(s)_up"] = up_list_message[5];
-    //j["truck(m)_up"] = up_list_message[4];
-    //j["truck(l)_up"] = up_list_message[3];
-    //j["truck(xl)_up"] = up_list_message[6];
-    //j["speed_up"] = up_speed_message;
-    j["car_down"] = down_list_message[2];
     j["Bus_down"] = total_bus_down;
     j["truck_down"] = total_truck_down;
-    //j["bus(s)_down"] = down_list_message[1];
-    //j["bus(l)_down"] = down_list_message[0];
-    //j["truck(s)_down"] = down_list_message[5];
-    //j["truck(m)_down"] = down_list_message[4];
-    //j["truck(l)_down"] = down_list_message[3];
-    //j["truck(xl)_down"] = down_list_message[6];
-    //j["speed_down"] = down_speed_message;
 
     const auto s = j.dump(); // serialize to std::string
     jsonmessage = s;
@@ -181,7 +205,7 @@ void resetminutes(int up_list_message[], int down_list_message[], float up_speed
     
 
     //cek direktori
-    cout<<get_current_dir_name()<<endl;
+    //cout<<get_current_dir_name()<<endl;
     //write to txt.
     int arraySize = *(&vehiclesList + 1) - vehiclesList;
     try {
@@ -232,12 +256,12 @@ int main()
   
 
     // Cron Reset Parameters Every Day
-    s.cron("0 17 * * *", []()
-           {
-        memset(up_list, 0, sizeof(up_list));
-        memset(down_list, 0, sizeof(down_list));
-        std::copy(up_list, up_list + 8, temp_up_list);
-        std::copy(down_list, down_list + 8, temp_down_list); });
+    //s.cron("0 17 * * *", []()
+    //       {
+    //    memset(up_list, 0, sizeof(up_list));
+    //    memset(down_list, 0, sizeof(down_list));
+    //    std::copy(up_list, up_list + 8, temp_up_list);
+    //    std::copy(down_list, down_list + 8, temp_down_list); });
 
     // Copy Array
     std::copy(up_list, up_list + 8, temp_up_list);
@@ -286,64 +310,3 @@ int main()
     // t3.join();
     return 0;
 }
-
-// Test
-// int main()
-// {
-//     isRun = true;
-//     char *yolo_engine = "/yolov5-deepsort-tensorrt/resources/yolov5s-des23-7class.engine";
-//     char *sort_engine = "/yolov5-deepsort-tensorrt/resources/deepsort.engine";
-//     float conf_thre = 0.6;
-//     Trtyolosort yosort(yolo_engine, sort_engine);
-
-//     VideoCapture capture;
-//     cv::Mat frame;
-//     cv::Mat output_frame;
-//     frame = capture.open("/yolor_deepsort/siang.mp4");
-//     if (!capture.isOpened())
-//     {
-//         std::cout << "can not open" << std::endl;
-//         return -1;
-//     }
-//     Size size = Size(capture.get(cv::CAP_PROP_FRAME_WIDTH), capture.get(cv::CAP_PROP_FRAME_HEIGHT));
-//     VideoWriter writer;
-//     writer.open("../result.avi", VideoWriter::fourcc('M', 'J', 'P', 'G'), 20, size, true);
-//     capture.read(frame);
-//     std::vector<DetectBox> det;
-//     auto start_draw_time = std::chrono::system_clock::now();
-//     clock_t start_draw, end_draw;
-//     start_draw = clock();
-//     int number_of_frame = 0;
-//     // Cron Reset Parameters Every Day
-//     // s.cron("0 0 * * *", []()
-//     //        {
-//     //     memset(up_list, 0, sizeof(up_list));
-//     //     memset(down_list, 0, sizeof(down_list)); });
-//     // // Cron Calculate Counter and Send to AMQP
-//     // s.every(std::chrono::seconds(5), []()
-//     //         {
-//     //     subtract(temp_up_list, up_list, result_up, 8);
-//     //     subtract(temp_down_list, down_list, result_down, 8);
-//     //     messageAMQP(result_up, result_down,filtered_moving_average_speed_up,filtered_moving_average_speed_down);
-//     //     std::copy(up_list, up_list + 8, temp_up_list);
-//     //     std::copy(down_list, down_list + 8, temp_down_list); });
-//     // // Copy Array
-//     // std::copy(up_list, up_list + 8, temp_up_list);
-//     // std::copy(down_list, down_list + 8, temp_down_list);
-//     // Thread Send AMQP
-//     // thread t1(sendAMQP);
-
-//     while (capture.read(frame))
-//     {
-//         auto start = std::chrono::system_clock::now();
-//         output_frame = yosort.TrtDetect(frame, conf_thre, det, number_of_frame);
-//         auto end = std::chrono::system_clock::now();
-//         int delay_infer = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-//         std::cout << "FPS:" << 1000 / delay_infer << std::endl;
-//         writer.write(output_frame);
-//     }
-//     std::cout << "Done" << std::endl;
-//     // t1.join();
-//     capture.release();
-//     return 0;
-// }

@@ -19,18 +19,22 @@ std::string TimeStr()
     int ptime_year;
   
     ptime = gmtime(&current_time); 
-    ptime_year = 1900+(ptime->tm_year); 	    
-    std::string lbl_hour = cv::format("%d",(ptime->tm_hour + CST)); 
-    std::string lbl_min = cv::format("%d",(ptime->tm_min));
-    std::string lbl_sec = cv::format("%d",(ptime->tm_sec));
-    
-    std::string lbl_mday = cv::format("%d",(ptime->tm_mday));
-    std::string lbl_mon = cv::format("%d",(ptime->tm_mon));
+    ptime_year = 1900+(ptime->tm_year);
+
+    std::string lbl_hour = cv::format("%2d",(ptime->tm_hour + CST)%24); 
+    std::string lbl_min = cv::format("%2d",(ptime->tm_min));
+    std::string lbl_sec = cv::format("%2d",(ptime->tm_sec));
+   // cout << ptime->tm_hour << endl;
+   
+   
+    std::string lbl_mday = cv::format("%2d",(ptime->tm_mday));
+    std::string lbl_mon = cv::format("%2d",(ptime->tm_mon));
     std::string lbl_year = cv::format("%d",ptime_year);
+ 
     
-    std::string time_wib= lbl_mday+":"+lbl_mon+":"+lbl_year+" "+lbl_hour+":"+lbl_min+":"+lbl_sec;;
+    std::string time_wib=lbl_hour+":"+lbl_min+":"+lbl_sec;
     //+"-"+lbl_hour+":"+lbl_min+":"+lbl_sec;
-    cout << time_wib << endl;
+    
     
    return time_wib;
 }
